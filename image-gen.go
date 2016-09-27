@@ -2,13 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/disintegration/imaging"
+	"github.com/urfave/cli"
 )
 
 // PathDirective contains instruction for traversing a path of images
@@ -86,7 +86,11 @@ func calculateSize(r ResizeDirective) (int, int) {
 
 func resizeDir(p PathDirective) {
 	var resizeWalk = func(path string, fileInfo os.FileInfo, _ error) error {
-		if fileInfo.Mode().IsRegular() {
+		if fileInfo != nil && fileInfo.Mode().IsRegular() {
+			if verbose {
+				fmt.Printf("%s\n", path)
+			}
+
 			img, err := imaging.Open(path)
 			if err != nil {
 				return err
@@ -106,11 +110,13 @@ func resizeDir(p PathDirective) {
 				if err != nil {
 					log.Println(err)
 				}
-			}
-		}
 
-		if fileInfo.IsDir() {
-			fmt.Printf("%s\n", path)
+				// m, _ := metadata.ReadTags(path)
+				// for k, v := range m {
+				// 	fmt.Printf("key[%s] value[%s]\n", k, v)
+				// }
+
+			}
 		}
 
 		return nil
@@ -124,22 +130,45 @@ func resizeDir(p PathDirective) {
 	}
 }
 
+var verbose = false
+
 func main() {
-	configPath := flag.String("config", "", "The configuration file")
+	configPath := ""
+	app := cli.NewApp()
+	app.Name = "image-gen"
+	app.Version = "0.1.0"
 
-	flag.Parse()
-
-	file, _ := os.Open(*configPath)
-	defer file.Close()
-	decoder := json.NewDecoder(file)
-	configuration := Config{}
-
-	err := decoder.Decode(&configuration)
-	if err != nil {
-		log.Println(err)
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "config, c",
+			Usage:       "Load configuration from `FILE`",
+			Destination: &configPath,
+		},
+		cli.BoolFlag{
+			Name:        "verbose",
+			Usage:       "Run verbosely",
+			Destination: &verbose,
+		},
 	}
 
-	for _, path := range configuration.Paths {
-		resizeDir(path)
+	app.Action = func(c *cli.Context) error {
+		file, _ := os.Open(configPath)
+		defer file.Close()
+		decoder := json.NewDecoder(file)
+		configuration := Config{}
+
+		err := decoder.Decode(&configuration)
+		if err != nil {
+			log.Println(err)
+		}
+
+		for _, path := range configuration.Paths {
+			path.Destination = filepath.Clean(path.Destination)
+			path.Path = filepath.Clean(path.Path)
+			resizeDir(path)
+		}
+		return nil
 	}
+
+	app.Run(os.Args)
 }
