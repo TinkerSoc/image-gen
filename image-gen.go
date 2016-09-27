@@ -56,6 +56,34 @@ func resampleFilterLookup(name string) imaging.ResampleFilter {
 	return imaging.Box
 }
 
+func disassemblePaths(p PathDirective, path string) (string, string, string) {
+	extension := filepath.Ext(path)
+	_, name := filepath.Split(path)
+	name = name[0 : len(name)-len(extension)]
+	relativePath, _ := filepath.Rel(p.Path, path)
+	destPath := filepath.Dir(p.Destination + relativePath)
+
+	return destPath, name, extension
+}
+
+func calculateSize(r ResizeDirective) (int, int) {
+	width := 0
+	height := 0
+
+	if r.KeepAspectRatio {
+		if r.Width > r.Height {
+			width = r.Width
+		} else {
+			height = r.Height
+		}
+	} else {
+		width = r.Width
+		height = r.Height
+	}
+
+	return width, height
+}
+
 func resizeDir(p PathDirective) {
 	var resizeWalk = func(path string, fileInfo os.FileInfo, _ error) error {
 		if fileInfo.Mode().IsRegular() {
@@ -64,15 +92,7 @@ func resizeDir(p PathDirective) {
 				return err
 			}
 
-			// FIXME: This is ugly, and appears to be broken
-			extension := filepath.Ext(path)
-			_, name := filepath.Split(path)
-			name = name[0 : len(name)-len(extension)]
-			relativePath, _ := filepath.Rel(p.Path, path)
-			destPath := filepath.Dir(p.Destination + relativePath)
-
-			fmt.Printf("Path: %s\n  Name: %s\n  Extension: %s\n  BasePath: %s\n",
-				path, name, extension, relativePath)
+			destPath, name, extension := disassemblePaths(p, path)
 
 			err = os.MkdirAll(destPath, 0777)
 			if err != nil {
@@ -80,20 +100,7 @@ func resizeDir(p PathDirective) {
 			}
 
 			for _, r := range p.Resize {
-				width := 0
-				height := 0
-
-				if r.KeepAspectRatio {
-					if r.Width > r.Height {
-						width = r.Width
-					} else {
-						height = r.Height
-					}
-				} else {
-					width = r.Width
-					height = r.Height
-				}
-
+				width, height := calculateSize(r)
 				dstImage := imaging.Resize(img, width, height, resampleFilterLookup(r.Algorithm))
 				err := imaging.Save(dstImage, (destPath + "/" + name + r.Suffix + extension))
 				if err != nil {
