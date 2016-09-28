@@ -61,7 +61,7 @@ func disassemblePaths(p PathDirective, path string) (string, string, string) {
 	_, name := filepath.Split(path)
 	name = name[0 : len(name)-len(extension)]
 	relativePath, _ := filepath.Rel(p.Path, path)
-	destPath := filepath.Dir(p.Destination + relativePath)
+	destPath := filepath.Dir(p.Destination + string(filepath.Separator) + relativePath)
 
 	return destPath, name, extension
 }
@@ -87,16 +87,12 @@ func calculateSize(r ResizeDirective) (int, int) {
 func resizeDir(p PathDirective) {
 	var resizeWalk = func(path string, fileInfo os.FileInfo, _ error) error {
 		if fileInfo != nil && fileInfo.Mode().IsRegular() {
-			if verbose {
-				fmt.Printf("%s\n", path)
-			}
 
 			img, err := imaging.Open(path)
+			destPath, name, extension := disassemblePaths(p, path)
 			if err != nil {
 				return err
 			}
-
-			destPath, name, extension := disassemblePaths(p, path)
 
 			err = os.MkdirAll(destPath, 0777)
 			if err != nil {
@@ -106,7 +102,11 @@ func resizeDir(p PathDirective) {
 			for _, r := range p.Resize {
 				width, height := calculateSize(r)
 				dstImage := imaging.Resize(img, width, height, resampleFilterLookup(r.Algorithm))
-				err := imaging.Save(dstImage, (destPath + "/" + name + r.Suffix + extension))
+				err := imaging.Save(dstImage, (destPath + string(filepath.Separator) + name + r.Suffix + extension))
+				if verbose {
+					fmt.Printf("%s --> %s\n", path, destPath+string(filepath.Separator)+name+r.Suffix+extension)
+				}
+
 				if err != nil {
 					log.Println(err)
 				}
