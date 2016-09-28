@@ -3,6 +3,9 @@
 *.a
 *.so
 
+# Project binary
+image-gen
+
 # Folders
 _obj
 _test
