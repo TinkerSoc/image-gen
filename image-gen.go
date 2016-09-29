@@ -147,7 +147,10 @@ func main() {
 	configPath := ""
 	app := cli.NewApp()
 	app.Name = "image-gen"
+	app.Usage = "build multiple resolution images for a static website"
 	app.Version = "0.1.0"
+	app.Author = "Simon Cooksey"
+	app.EnableBashCompletion = true
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
