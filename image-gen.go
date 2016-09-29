@@ -176,13 +176,14 @@ func main() {
 		},
 	}
 
-	runtime.GOMAXPROCS(concurrencyLevel * 2)
-
 	app.Action = func(c *cli.Context) error {
 		file, _ := os.Open(configPath)
 		defer file.Close()
 		decoder := json.NewDecoder(file)
 		configuration := Config{}
+
+		// Set the runtime concurrency level
+		runtime.GOMAXPROCS(concurrencyLevel)
 
 		err := decoder.Decode(&configuration)
 		if err != nil {
