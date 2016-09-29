@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/disintegration/imaging"
 	"github.com/stretchr/powerwalk"
@@ -88,7 +89,8 @@ func calculateSize(r ResizeDirective) (int, int) {
 
 func resizeDir(p PathDirective) {
 	var resizeWalk = func(path string, fileInfo os.FileInfo, _ error) error {
-		if fileInfo != nil && fileInfo.Mode().IsRegular() {
+		if fileInfo != nil && fileInfo.Mode().IsRegular() &&
+			(p.Ignore == "" || !strings.HasPrefix(path, p.Ignore)) {
 
 			img, err := imaging.Open(path)
 			destPath, name, extension := disassemblePaths(p, path)
@@ -191,8 +193,13 @@ func main() {
 		}
 
 		for _, path := range configuration.Paths {
-			path.Destination = filepath.Clean(path.Destination)
-			path.Path = filepath.Clean(path.Path)
+			path.Path, _ = filepath.Abs(filepath.Clean(path.Path))
+			path.Destination, _ = filepath.Abs(filepath.Clean(path.Destination))
+			if path.Ignore != "" {
+				path.Ignore, _ = filepath.Abs(filepath.Clean(path.Ignore))
+			}
+
+			fmt.Printf("%s --> %s\nIgnoring %s\n\n", path.Path, path.Destination, path.Ignore)
 			resizeDir(path)
 		}
 
