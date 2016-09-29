@@ -6,8 +6,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/disintegration/imaging"
+	"github.com/stretchr/powerwalk"
 	"github.com/urfave/cli"
 )
 
@@ -123,7 +125,13 @@ func resizeDir(p PathDirective) {
 	}
 
 	if p.Recursive {
-		err := filepath.Walk(p.Path, resizeWalk)
+		err := error(nil)
+		if useConcurreny {
+			err = powerwalk.WalkLimit(p.Path, resizeWalk, runtime.NumCPU()*2)
+		} else {
+			err = filepath.Walk(p.Path, resizeWalk)
+		}
+
 		if err != nil {
 			log.Println(err)
 		}
@@ -131,8 +139,11 @@ func resizeDir(p PathDirective) {
 }
 
 var verbose = false
+var useConcurreny = true
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	configPath := ""
 	app := cli.NewApp()
 	app.Name = "image-gen"
@@ -143,6 +154,11 @@ func main() {
 			Name:        "config, c",
 			Usage:       "Load configuration from `FILE`",
 			Destination: &configPath,
+		},
+		cli.BoolTFlag{
+			Name:        "no-concurrency",
+			Usage:       "Disable concurrent workers",
+			Destination: &useConcurreny,
 		},
 		cli.BoolFlag{
 			Name:        "verbose",
@@ -167,6 +183,7 @@ func main() {
 			path.Path = filepath.Clean(path.Path)
 			resizeDir(path)
 		}
+
 		return nil
 	}
 
