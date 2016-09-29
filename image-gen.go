@@ -142,7 +142,7 @@ var verbose = false
 var useConcurreny = true
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	concurrencyLevel := 1
 
 	configPath := ""
 	app := cli.NewApp()
@@ -155,6 +155,12 @@ func main() {
 			Usage:       "Load configuration from `FILE`",
 			Destination: &configPath,
 		},
+		cli.IntFlag{
+			Name:        "concurrency-level",
+			Usage:       "Set the number of threads for image-gen to use",
+			Value:       runtime.NumCPU() * 2,
+			Destination: &concurrencyLevel,
+		},
 		cli.BoolTFlag{
 			Name:        "no-concurrency",
 			Usage:       "Disable concurrent workers",
@@ -166,6 +172,8 @@ func main() {
 			Destination: &verbose,
 		},
 	}
+
+	runtime.GOMAXPROCS(concurrencyLevel * 2)
 
 	app.Action = func(c *cli.Context) error {
 		file, _ := os.Open(configPath)
