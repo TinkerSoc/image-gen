@@ -95,9 +95,14 @@ func resizeDir(p PathDirective) {
 		}
 
 		if fileInfo != nil && fileInfo.Mode().IsRegular() {
+			destPath, name, extension := disassemblePaths(p, path)
+
+			// ignore dot files
+			if name == "" {
+				return nil
+			}
 
 			img, err := imaging.Open(path)
-			destPath, name, extension := disassemblePaths(p, path)
 			if err != nil {
 				return err
 			}
