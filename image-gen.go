@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -91,7 +90,8 @@ func calculateSize(r ResizeDirective) (int, int) {
 func resizeDir(p PathDirective) {
 	var resizeWalk = func(path string, fileInfo os.FileInfo, _ error) error {
 		if p.Ignore != "" && strings.HasPrefix(path, p.Ignore) {
-			return errors.New("skip this directory")
+			log.Printf("skip this directory: %s\n", path)
+			return nil
 		}
 
 		if fileInfo != nil && fileInfo.Mode().IsRegular() {
@@ -123,12 +123,6 @@ func resizeDir(p PathDirective) {
 				if err != nil {
 					log.Println(err)
 				}
-
-				// m, _ := metadata.ReadTags(path)
-				// for k, v := range m {
-				// 	fmt.Printf("key[%s] value[%s]\n", k, v)
-				// }
-
 			}
 		}
 
