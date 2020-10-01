@@ -94,10 +94,8 @@ func resizeDir(p PathDirective) {
 			log.Printf("skip this directory: %s\n", path)
 			return nil
 		}
-
 		if fileInfo != nil && fileInfo.Mode().IsRegular() {
 			destPath, name, extension := disassemblePaths(p, path)
-
 			// ignore dot files
 			if name == "" {
 				return nil
@@ -163,6 +161,8 @@ func main() {
 			 "Set the number of threads for image-gen to use")
 	configPathPtr := flag.String("config", "", 
 			 "Load configuration from `FILE`")
+	configPathCPtr := flag.String("c", "", 
+			 "Load configuration from `FILE`")
 	verbosePtr := flag.Bool("verbose", false, 
 			 "Run verbosely")
 	useConcurrenyPtr := flag.Bool("no-concurrency", false,
@@ -171,8 +171,13 @@ func main() {
 
 	concurrencyLevel := *concurrencyLevelPtr
 	configPath := *configPathPtr
+	configPathC := *configPathCPtr
 	verbose = *verbosePtr
 	useConcurreny = *useConcurrenyPtr
+
+	if (configPathC != "") {
+		configPath = configPathC
+	}
 
 	if(configPath=="") {
 		fmt.Printf("config path parameter required\n")
