@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"flag"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,7 +12,7 @@ import (
 
 	"github.com/disintegration/imaging"
 	"github.com/stretchr/powerwalk"
-	"github.com/urfave/cli"
+	//"github.com/urfave/cli"
 )
 
 // PathDirective contains instruction for traversing a path of images
@@ -147,67 +148,62 @@ var verbose = false
 var useConcurreny = true
 
 func main() {
-	concurrencyLevel := 1
 
-	configPath := ""
-	app := cli.NewApp()
-	app.Name = "image-gen"
-	app.Usage = "build multiple resolution images for a static website"
-	app.Version = "0.1.0"
-	app.Author = "Simon Cooksey"
-	app.EnableBashCompletion = true
 
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:        "config, c",
-			Usage:       "Load configuration from `FILE`",
-			Destination: &configPath,
-		},
-		cli.IntFlag{
-			Name:        "concurrency-level",
-			Usage:       "Set the number of threads for image-gen to use",
-			Value:       runtime.NumCPU() * 2,
-			Destination: &concurrencyLevel,
-		},
-		cli.BoolTFlag{
-			Name:        "no-concurrency",
-			Usage:       "Disable concurrent workers",
-			Destination: &useConcurreny,
-		},
-		cli.BoolFlag{
-			Name:        "verbose",
-			Usage:       "Run verbosely",
-			Destination: &verbose,
-		},
+	//app := cli.NewApp()
+	//app.Name = "image-gen"
+	//app.Usage = "build multiple resolution images for a static website"
+	//app.Version = "0.1.1"
+	//app.Author = [1]string{"Simon Cooksey"}
+	//app.EnableBashCompletion = true
+	flag.String("What", "0.1.1", "0.1.1")
+	flag.String("Version", "image-gen", "image-gen")
+	flag.String("Purpose", "build multiple resolution images for a static website", "build multiple resolution images for a static website")
+	concurrencyLevelPtr := flag.Int("concurrency-level", 1,
+			 "Set the number of threads for image-gen to use")
+	configPathPtr := flag.String("config", "", 
+			 "Load configuration from `FILE`")
+	verbosePtr := flag.Bool("verbose", false, 
+			 "Run verbosely")
+	useConcurrenyPtr := flag.Bool("no-concurrency", false,
+			 "Disable concurrent workers")//might be bad
+	flag.Parse()
+
+	concurrencyLevel := *concurrencyLevelPtr
+	configPath := *configPathPtr
+	verbose = *verbosePtr
+	useConcurreny = *useConcurrenyPtr
+
+	if(configPath=="") {
+		fmt.Printf("config path parameter required\n")
 	}
 
-	app.Action = func(c *cli.Context) error {
-		file, _ := os.Open(configPath)
-		defer file.Close()
-		decoder := json.NewDecoder(file)
-		configuration := Config{}
+	file, _ := os.Open(configPath)
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	configuration := Config{}
 
-		// Set the runtime concurrency level
-		runtime.GOMAXPROCS(concurrencyLevel)
+	// Set the runtime concurrency level
+	runtime.GOMAXPROCS(concurrencyLevel)
 
-		err := decoder.Decode(&configuration)
-		if err != nil {
-			log.Println(err)
-		}
-
-		for _, path := range configuration.Paths {
-			path.Path, _ = filepath.Abs(filepath.Clean(path.Path))
-			path.Destination, _ = filepath.Abs(filepath.Clean(path.Destination))
-			if path.Ignore != "" {
-				path.Ignore, _ = filepath.Abs(filepath.Clean(path.Ignore))
-			}
-
-			fmt.Printf("%s --> %s\nIgnoring %s\n\n", path.Path, path.Destination, path.Ignore)
-			resizeDir(path)
-		}
-
-		return nil
+	err := decoder.Decode(&configuration)
+	if err != nil {
+		log.Println(err)
 	}
 
-	app.Run(os.Args)
+	for _, path := range configuration.Paths {
+		path.Path, _ = filepath.Abs(filepath.Clean(path.Path))
+		path.Destination, _ = filepath.Abs(filepath.Clean(path.Destination))
+		if path.Ignore != "" {
+			path.Ignore, _ = filepath.Abs(filepath.Clean(path.Ignore))
+		}
+
+		fmt.Printf("%s --> %s\nIgnoring %s\n\n", path.Path, path.Destination, path.Ignore)
+		resizeDir(path)
+	}
+
+		//return nil
+	//}
+
+	//app.Run(os.Args)
 }
