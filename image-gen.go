@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -56,7 +56,7 @@ func resampleFilterLookup(name string) imaging.ResampleFilter {
 	case "NearestNeighbor":
 		return imaging.NearestNeighbor
 	}
-	// Unreacable, but Go doesn't care...
+	// Unreachable, but Go doesn't care...
 	return imaging.Box
 }
 
@@ -132,7 +132,7 @@ func resizeDir(p PathDirective) {
 
 	if p.Recursive {
 		err := error(nil)
-		if useConcurreny {
+		if useConcurrency {
 			err = powerwalk.WalkLimit(p.Path, resizeWalk, runtime.NumCPU()*2)
 		} else {
 			err = filepath.Walk(p.Path, resizeWalk)
@@ -145,36 +145,28 @@ func resizeDir(p PathDirective) {
 }
 
 var verbose = false
-var useConcurreny = true
+var useConcurrency = true
 
 func main() {
-
-
-	//app := cli.NewApp()
-	//app.Name = "image-gen"
-	//app.Usage = "build multiple resolution images for a static website"
-	//app.Version = "0.1.1"
-	//app.Author = [1]string{"Simon Cooksey"}
-	//app.EnableBashCompletion = true
 	flag.String("What", "0.1.1", "0.1.1")
 	flag.String("Version", "image-gen", "image-gen")
 	flag.String("Purpose", "build multiple resolution images for a static website", "build multiple resolution images for a static website")
-	concurrencyLevelPtr := flag.Int("concurrency-level", 1,
-			 "Set the number of threads for image-gen to use")
-	configPathPtr := flag.String("config", "", 
-			 "Load configuration from `FILE`")
-	verbosePtr := flag.Bool("verbose", false, 
-			 "Run verbosely")
-	useConcurrenyPtr := flag.Bool("no-concurrency", false,
-			 "Disable concurrent workers")//might be bad
+	concurrencyLevelPtr := flag.Int("concurrency-level", runtime.NumCPU(),
+		"Set the number of threads for image-gen to use")
+	configPathPtr := flag.String("c", "",
+		"Load configuration from `FILE`")
+	verbosePtr := flag.Bool("verbose", false,
+		"Run verbosely")
+	useConcurrencyPtr := flag.Bool("no-concurrency", false,
+		"Disable concurrent workers") //might be bad
 	flag.Parse()
 
 	concurrencyLevel := *concurrencyLevelPtr
 	configPath := *configPathPtr
 	verbose = *verbosePtr
-	useConcurreny = *useConcurrenyPtr
+	useConcurrency = *useConcurrencyPtr
 
-	if(configPath=="") {
+	if configPath == "" {
 		fmt.Printf("config path parameter required\n")
 	}
 
@@ -202,7 +194,7 @@ func main() {
 		resizeDir(path)
 	}
 
-		//return nil
+	//return nil
 	//}
 
 	//app.Run(os.Args)
